@@ -1,0 +1,39 @@
+name: Scheduled Tasks
+
+on:
+  schedule:
+    # Daily appointment reminders at 08:00 UTC
+    - cron: '0 8 * * *'
+    # Monthly doctor reports at 18:05 UTC on the 11th
+    - cron: '5 18 11 * *'
+  workflow_dispatch: {}  # lets you manually trigger a run from the Actions tab to test
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend to wake it (free tier can be asleep)
+        run: curl -s -o /dev/null "${{ secrets.BACKEND_URL }}" || true
+
+      - name: Wait for cold start
+        run: sleep 30
+
+      - name: Run daily reminders (only on the daily schedule)
+        if: github.event.schedule == '0 8 * * *'
+        run: |
+          curl -sf -X POST "${{ secrets.BACKEND_URL }}/tasks/run-daily-reminders" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
+
+      - name: Run monthly reports (only on the monthly schedule)
+        if: github.event.schedule == '5 18 11 * *'
+        run: |
+          curl -sf -X POST "${{ secrets.BACKEND_URL }}/tasks/run-monthly-reports" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
+
+      - name: Manual trigger (runs both, for testing via workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          curl -sf -X POST "${{ secrets.BACKEND_URL }}/tasks/run-daily-reminders" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
+          curl -sf -X POST "${{ secrets.BACKEND_URL }}/tasks/run-monthly-reports" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"

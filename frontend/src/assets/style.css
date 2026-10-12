@@ -1,0 +1,71 @@
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+}
+
+.main-content {
+    flex: 1;
+    padding: 2rem 0;
+    background-color: #f8f9fa;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, .075);
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.stat-card {
+    border-left: 4px solid var(--primary-color);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.table th {
+    background-color: #e9ecef;
+}
+
+.badge {
+    padding: 0.5em 0.8em;
+}
+
+footer {
+    background-color: #212529;
+    color: white;
+    padding: 1rem 0;
+    margin-top: auto;
+    /* position: fixed;
+    bottom: 0; */
+    width: 100%;
+}

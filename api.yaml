@@ -1,0 +1,519 @@
+openapi: 3.0.3
+info:
+  title: Clinic Management API
+  description: API for managing doctors, patients, appointments, treatments, and reports.
+  version: 1.0.0
+
+servers:
+  - url: /api
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        email:
+          type: string
+        contact:
+          type: string
+        role:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: string
+        address:
+          type: string
+        specialization:
+          type: string
+        department_id:
+          type: integer
+        is_active:
+          type: boolean
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: integer
+        patient:
+          $ref: '#/components/schemas/User'
+        doctor:
+          $ref: '#/components/schemas/User'
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          example: "14:30"
+        reason:
+          type: string
+        status:
+          type: string
+        treatment:
+          type: object
+          properties:
+            diagnosis:
+              type: string
+            prescription:
+              type: string
+            notes:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+
+    Department:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+
+security:
+  - BearerAuth: []
+
+paths:
+
+  # ---------------- DOCTOR API ----------------
+  /doctor/dashboard:
+    get:
+      summary: Doctor dashboard
+      description: Shows upcoming appointments and patients. Only accessible by role 'doctor'.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data
+
+  /doctor/patients:
+    get:
+      summary: List patients for the doctor
+      description: Returns all patients linked to the doctor. Role: doctor.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of patients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+  /doctor/patient/{patient_id}/history:
+    get:
+      summary: Patient appointment history
+      description: Returns completed appointments and treatment history for a patient. Role: doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Patient history
+        '404':
+          description: Patient not found
+
+  /doctor/appointments:
+    get:
+      summary: List doctor appointments
+      description: Optional query param 'status' to filter by appointment status. Role: doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            default: all
+            enum: [all, Booked, Completed, Cancelled]
+      responses:
+        '200':
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  appointments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Appointment'
+
+  /doctor/appointments/{appointment_id}:
+    get:
+      summary: Get specific appointment
+      description: Returns appointment details. Role: doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: appointment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Appointment details
+        '403':
+          description: Access denied
+
+  /doctor/appointments/{appointment_id}/complete:
+    post:
+      summary: Complete an appointment
+      description: Marks appointment as completed and records treatment. Role: doctor.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                diagnosis:
+                  type: string
+                prescription:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Appointment completed
+
+  /doctor/appointments/{appointment_id}/cancel:
+    post:
+      summary: Cancel an appointment
+      description: Role: doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: appointment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Appointment cancelled
+
+  /doctor/treatment/{appointment_id}:
+    get:
+      summary: Get treatment by appointment
+      description: Returns treatment details. Role: doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: appointment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Treatment details
+        '404':
+          description: No treatment recorded
+
+  /doctor/treatment/{treatment_id}:
+    put:
+      summary: Update treatment
+      description: Update treatment info. Role: doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: treatment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                diagnosis:
+                  type: string
+                prescription:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Treatment updated
+
+    delete:
+      summary: Delete treatment
+      description: Role: doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: treatment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Treatment deleted
+
+  /doctor/timeslots:
+    get:
+      summary: List doctor time slots
+      description: Role: doctor.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of time slots
+    post:
+      summary: Add a time slot
+      description: Role: doctor.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date
+                time:
+                  type: string
+      responses:
+        '201':
+          description: Time slot added
+
+  /doctor/timeslots/{slot_id}:
+    delete:
+      summary: Delete time slot
+      description: Role: doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: slot_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Time slot deleted
+
+  # ---------------- ADMIN API ----------------
+  /admin/dashboard:
+    get:
+      summary: Admin dashboard
+      description: Role: admin.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics
+
+  /admin/doctor:
+    get:
+      summary: List doctors
+      description: Role: admin. Optional query 'search' filters by name or specialization.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of doctors
+
+  /admin/doctor/add:
+    post:
+      summary: Add new doctor
+      description: Role: admin.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                email: { type: string }
+                password: { type: string }
+                full_name: { type: string }
+                contact: { type: string }
+                specialization: { type: string }
+                department_id: { type: integer }
+      responses:
+        '201':
+          description: Doctor added
+
+  /admin/doctor/edit/{doctor_id}:
+    put:
+      summary: Edit doctor
+      description: Role: admin.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: doctor_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string }
+                email: { type: string }
+                contact: { type: string }
+                specialization: { type: string }
+                department_id: { type: integer }
+                password: { type: string }
+      responses:
+        '200':
+          description: Doctor updated
+
+  /admin/doctor/delete/{doctor_id}:
+    delete:
+      summary: Deactivate doctor
+      description: Role: admin.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: doctor_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Doctor deactivated
+
+  /admin/patient:
+    get:
+      summary: List patients
+      description: Role: admin. Optional 'search' query.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of patients
+
+  /admin/patient/edit/{patient_id}:
+    put:
+      summary: Edit patient
+      description: Role: admin.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string }
+                email: { type: string }
+                contact: { type: string }
+                age: { type: integer }
+                gender: { type: string }
+                address: { type: string }
+      responses:
+        '200':
+          description: Patient updated
+
+  /admin/patient/delete/{patient_id}:
+    delete:
+      summary: Deactivate patient
+      description: Role: admin.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Patient deactivated
+
+  /admin/appointments:
+    get:
+      summary: List all appointments
+      description: Role: admin.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of appointments
+
+  /admin/departments:
+    get:
+      summary: List all departments
+      description: Role: admin.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Departments
+
+  /admin/department/add:
+    post:
+      summary: Add new department
+      description: Role: admin.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+      responses:
+        '201':
+          description: Department added
